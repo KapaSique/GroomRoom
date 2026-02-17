@@ -1,0 +1,8 @@
+node_modules/
+.next/
+*.db
+.env
+public/uploads/pets/*
+public/uploads/results/*
+!public/uploads/pets/.gitkeep
+!public/uploads/results/.gitkeep

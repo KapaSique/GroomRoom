@@ -24,7 +24,7 @@ export default async function HomePage() {
        FROM requests
        WHERE status = 'Услуга оказана' AND result_photo_path IS NOT NULL
        ORDER BY created_at DESC
-       LIMIT 4`
+       LIMIT 8`
     )
     .all() as ShowcaseRequest[];
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -11,17 +11,28 @@ interface ShowcaseRequest {
   result_photo_path: string;
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" as const },
-  }),
-};
+const DEMO_FALLBACK: ShowcaseRequest[] = [
+  { pet_name: "Барсик", photo_path: "/demo/demo1.jpg", result_photo_path: "/demo/demo1.jpg" },
+  { pet_name: "Рекс", photo_path: "/demo/demo2.jpg", result_photo_path: "/demo/demo2.jpg" },
+  { pet_name: "Пушок", photo_path: "/demo/demo3.jpg", result_photo_path: "/demo/demo3.jpg" },
+  { pet_name: "Макс", photo_path: "/demo/demo4.jpg", result_photo_path: "/demo/demo4.jpg" },
+  { pet_name: "Бим", photo_path: "/demo/demo5.jpg", result_photo_path: "/demo/demo5.jpg" },
+  { pet_name: "Мурка", photo_path: "/demo/demo6.jpg", result_photo_path: "/demo/demo6.jpg" },
+];
 
-const stagger = {
-  visible: { transition: { staggerChildren: 0.1 } },
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 300 : -300,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -300 : 300,
+    opacity: 0,
+  }),
 };
 
 export default function MainPageClient({
@@ -35,6 +46,26 @@ export default function MainPageClient({
   const [regErrors, setRegErrors] = useState<Record<string, string>>({});
   const [regSuccess, setRegSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const items = showcaseRequests.length > 0 ? showcaseRequests : DEMO_FALLBACK;
+  const [[currentIndex, direction], setSlide] = useState([0, 0]);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const paginate = useCallback(
+    (newDirection: number) => {
+      setSlide(([prev]) => {
+        const next = (prev + newDirection + items.length) % items.length;
+        return [next, newDirection];
+      });
+    },
+    [items.length]
+  );
+
+  useEffect(() => {
+    if (isPaused || items.length <= 1) return;
+    const timer = setInterval(() => paginate(1), 4000);
+    return () => clearInterval(timer);
+  }, [isPaused, paginate, items.length]);
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -107,7 +138,7 @@ export default function MainPageClient({
         {/* Hero section */}
         <section className="px-6 pt-6 pb-12 max-w-7xl mx-auto">
           <div className="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-start">
-            {/* Left: Hero + Showcase */}
+            {/* Left: Hero + Carousel */}
             <div>
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
@@ -126,62 +157,93 @@ export default function MainPageClient({
                 </p>
               </motion.div>
 
-              {/* Showcase */}
-              {showcaseRequests.length > 0 && (
-                <motion.div
-                  initial="hidden"
-                  animate="visible"
-                  variants={stagger}
-                  className="mb-10"
+              {/* Showcase Carousel */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.3 }}
+                className="mb-10"
+              >
+                <h2 className="text-xl font-bold mb-4 text-[var(--color-charcoal)]">
+                  Наши работы
+                </h2>
+
+                <div
+                  className="relative"
+                  onMouseEnter={() => setIsPaused(true)}
+                  onMouseLeave={() => setIsPaused(false)}
                 >
-                  <motion.h2
-                    variants={fadeUp}
-                    custom={0}
-                    className="text-xl font-bold mb-4 text-[var(--color-charcoal)]"
-                  >
-                    Наши работы
-                  </motion.h2>
-                  <div className="grid grid-cols-2 gap-3 lg:grid-cols-2">
-                    {showcaseRequests.map((req, i) => (
+                  {/* Carousel container */}
+                  <div className="relative overflow-hidden rounded-2xl aspect-square bg-gray-100">
+                    <AnimatePresence initial={false} custom={direction} mode="wait">
                       <motion.div
-                        key={i}
-                        variants={fadeUp}
-                        custom={i + 1}
-                        whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                        className="card overflow-hidden group"
+                        key={currentIndex}
+                        custom={direction}
+                        variants={slideVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                        className="absolute inset-0"
                       >
-                        <div className="relative aspect-square overflow-hidden">
-                          <img
-                            src={req.result_photo_path || req.photo_path}
-                            alt={req.pet_name}
-                            className="test-t-photo w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                          <div className="absolute bottom-0 left-0 right-0 p-3">
-                            <p className="test-t-name text-white font-semibold text-sm drop-shadow-lg">
-                              {req.pet_name}
-                            </p>
-                          </div>
+                        <img
+                          src={items[currentIndex].result_photo_path || items[currentIndex].photo_path}
+                          alt={items[currentIndex].pet_name}
+                          className="test-t-photo w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-5">
+                          <p className="test-t-name text-white font-bold text-lg drop-shadow-lg">
+                            {items[currentIndex].pet_name}
+                          </p>
                         </div>
                       </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
+                    </AnimatePresence>
 
-              {showcaseRequests.length === 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="mb-10 glass-card p-8 text-center"
-                >
-                  <div className="text-5xl mb-3">🐾</div>
-                  <p className="text-[var(--color-charcoal-light)]">
-                    Скоро здесь появятся наши работы!
-                  </p>
-                </motion.div>
-              )}
+                    {/* Arrow buttons */}
+                    {items.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => paginate(-1)}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-lg hover:bg-white transition-colors z-10"
+                          aria-label="Previous"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="15 18 9 12 15 6" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => paginate(1)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-lg hover:bg-white transition-colors z-10"
+                          aria-label="Next"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Dot indicators */}
+                  {items.length > 1 && (
+                    <div className="flex justify-center gap-2 mt-4">
+                      {items.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setSlide([i, i > currentIndex ? 1 : -1])}
+                          className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                            i === currentIndex
+                              ? "bg-rose-500 scale-125"
+                              : "bg-rose-200 hover:bg-rose-300"
+                          }`}
+                          aria-label={`Go to slide ${i + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             </div>
 
             {/* Right: Auth Forms */}

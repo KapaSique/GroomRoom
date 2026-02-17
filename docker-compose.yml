@@ -1,0 +1,15 @@
+services:
+  groomroom:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - groomroom-data:/app/data
+      - groomroom-uploads:/app/public/uploads
+    environment:
+      - DB_PATH=/app/data/groomroom.db
+    restart: unless-stopped
+
+volumes:
+  groomroom-data:
+  groomroom-uploads:

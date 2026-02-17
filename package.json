@@ -1,0 +1,23 @@
+{
+  "name": "groomroom",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KapaSique/GroomRoom.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/KapaSique/GroomRoom/issues"
+  },
+  "homepage": "https://github.com/KapaSique/GroomRoom#readme"
+}
